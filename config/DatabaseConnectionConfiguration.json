@@ -1,0 +1,14 @@
+[
+  {
+    "Datasource": "SUPPORTTOOLMONGODB",
+    "DatabaseType": "MONGODB",
+    "EnableConnection": true,
+    "User": "admin",
+    "Password": "password",
+    "PasswordJwt": "passwordjwt",
+    "Protocol": "mongodb",
+    "Host": "mongo",
+    "Port": "27017",
+    "Database": "blogdb"
+  }
+]
