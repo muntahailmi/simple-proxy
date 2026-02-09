@@ -43,7 +43,7 @@ const Entry = mongoose.model("URLMap", entrySchema);
 
 // Routes
 // check db
-app.get("/", function (req, res) {
+app.get(["/","/api"], function (req, res) {
   Entry.find().then(entries => {
     res.status(200).send(entries);
   }).catch(err => {
@@ -67,7 +67,7 @@ app.get("/", function (req, res) {
 //       res.status(400).send("Unable to save entry to database.");
 //     });
 // })
-app.post("/add", function (req, res) {
+app.post(["/add", "/api"], function (req, res) {
   const entry = new Entry({
     code: req.body.code,
     url: req.body.url
@@ -75,7 +75,7 @@ app.post("/add", function (req, res) {
   entry.save()
     .then(() => {
       console.log('Post added to DB.');
-      res.redirect(303, '/');
+      res.redirect(303, '/api');
     })
     .catch(err => {
       console.log(err);
@@ -83,10 +83,10 @@ app.post("/add", function (req, res) {
     });
 });
 // clear db
-app.post("/clear", function (req, res) {
+app.delete("/api", function (req, res) {
   Entry.deleteMany({}).then(() => {
     console.log('DB cleared.');
-    res.redirect(303, '/');
+    res.redirect(303, '/api');
   }).catch(err => {
       console.log(err);
       res.status(400).send("Unable to clear database.");
