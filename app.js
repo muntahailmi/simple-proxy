@@ -95,10 +95,10 @@ app.post("/clear", function (req, res) {
 
 
 // redirect
-app.use("/api/:code/*path", function(req, res){
+app.use("/api/:code{/*path}", function(req, res){
   const appCode = req.params.code
   // const apiPath = req.params.path || req.params[0]
-  const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0];
+  const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
 
   Entry.findOne({ code: appCode })
   .then(function (entry) {
