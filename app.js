@@ -164,14 +164,16 @@ app.use("/api/:code{/*path}", createProxyMiddleware({
   // target: req.proxyTarget,
   target: "http://localhost:8080",
   changeOrigin: true,
-  onProxyReq: fixRequestBody,
+  // onProxyReq: fixRequestBody,
   router: (req) => {
     const appCode = req.params.code
-    const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
+    // const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
     return Entry.findOne({ code: appCode })
       .then(function (entry) {
-        console.log("PROXY TARGET", entry.url+"/"+apiPath);
-        return entry.url+"/"+apiPath;
+        // console.log("PROXY TARGET", entry.url+"/"+apiPath);
+        // return entry.url+"/"+apiPath;
+        // console.log("PROXY TARGET", entry.url);
+        return entry.url;
       })
       // .catch(function (err) {
       //   console.log(err);
@@ -179,7 +181,28 @@ app.use("/api/:code{/*path}", createProxyMiddleware({
       //   // res.status(404).send("Not Found");
       // });
   },
-  pathRewrite: (path, req) => {Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || ""}
+  // pathRewrite: {'^/api/[^/]+': ''},
+  pathRewrite: (path, req) => {
+    // console.log("PATH", Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "");
+    // console.log("PATHIN", path)
+    return Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
+  },
+  on: {
+    proxyReq: (proxyReq, req, res) => {
+      // console.log('Final Proxy Path:', proxyReq.path);
+      const protocol = proxyReq.protocol || (proxyReq.agent && proxyReq.agent.protocol) || 'http:';
+      const host = proxyReq.getHeader('host');
+      const path = proxyReq.path;
+      const fullUrl = `${protocol}//${host}${path}`;
+      console.log('[PROXY]', proxyReq.method, fullUrl);
+    },
+    // proxyRes: (proxyRes, req, res) => {
+    //   /* handle proxyRes */
+    // },
+    error: (err, req, res) => {
+      console.error('[ERROR]', err.message);
+    },
+  },
 }))
 // app.use("/test/:code/*", createProxyMiddleware({
 //   target: "http://webhook.site/1057d5a1-dd2b-4f17-8538-870c268fcab3",
