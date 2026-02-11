@@ -5,13 +5,13 @@ const express = require("express");
 const _ = require("lodash");
 const mongoose = require("mongoose");
 const fs = require('fs').promises;
-// const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 
 const app = express();
 
 // app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(express.static("public"));
-app.use(express.json());
+// app.use(express.json());
 
 // Connecting to database
 async function readConfig() {
@@ -43,7 +43,7 @@ const Entry = mongoose.model("URLMap", entrySchema);
 
 // Routes
 // check db
-app.get(["/","/api"], function (req, res) {
+app.get(["/","/api"], express.json(), function (req, res) {
   Entry.find().then(entries => {
     res.status(200).send(entries);
   }).catch(err => {
@@ -67,7 +67,7 @@ app.get(["/","/api"], function (req, res) {
 //       res.status(400).send("Unable to save entry to database.");
 //     });
 // })
-app.post(["/add", "/api"], function (req, res) {
+app.post(["/add", "/api"], express.json(), function (req, res) {
   const entry = new Entry({
     code: req.body.code,
     url: req.body.url
@@ -83,7 +83,7 @@ app.post(["/add", "/api"], function (req, res) {
     });
 });
 // clear db
-app.delete("/api", function (req, res) {
+app.delete("/api", express.json(), function (req, res) {
   Entry.deleteMany({}).then(() => {
     console.log('DB cleared.');
     res.redirect(303, '/api');
@@ -95,59 +95,59 @@ app.delete("/api", function (req, res) {
 
 
 // redirect
-app.use("/api/:code{/*path}", function(req, res){
-  const appCode = req.params.code
-  // const apiPath = req.params.path || req.params[0]
-  const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
+// app.use("/api/:code{/*path}", function(req, res){
+//   const appCode = req.params.code
+//   // const apiPath = req.params.path || req.params[0]
+//   const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
 
-  Entry.findOne({ code: appCode })
-  .then(function (entry) {
-    const targetURL = entry.url + "/" + apiPath
-    const filteredHeaders = { ...req.headers };
-    delete filteredHeaders['content-length'];
-    delete filteredHeaders['transfer-encoding'];
-    delete filteredHeaders['host']; // Let fetch/target handle the host
-    fetch(targetURL, {
-      method: req.method,
-      headers: {
-        ...filteredHeaders,
-        // host: 'api.external-service.com' // Overwriting host is vital
-      },
-      body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
-    })
-    .then(response => {
-      res.status(response.status);
-      // response.headers.forEach((value, key) => res.setHeader(key, value));
-      response.headers.forEach((value, key) => {
-        if (key !== 'transfer-encoding' && key !== 'content-encoding' && key !== 'content-length') {
-          res.setHeader(key, value);
-        }
-      });
-      return response.body.pipeTo(Writable.toWeb(res));
-      // return response.arrayBuffer();
-    })
-    // .then(buffer => {
-    //   console.log("[DEBUG] ",new TextDecoder().decode(Buffer.from(buffer)))
-    //   console.log("[DEBUG][HEADERS]",res.getHeaders());
-    //   // res.send(Buffer.from(buffer));
-    //   // res.send("ok")
-    //   res.send(new TextDecoder().decode(Buffer.from(buffer)));
-    // })
-    .catch(err => {
-      console.error('Fetch Error:', err);
-      if (!res.headersSent) {
-        res.status(500).send('Proxy Request Failed');
-      }
-    });
-  })
-  .catch(function (err) {
-    console.log(err);
-    res.status(404).send("Not Found");
-  });
-})
+//   Entry.findOne({ code: appCode })
+//   .then(function (entry) {
+//     const targetURL = entry.url + "/" + apiPath
+//     const filteredHeaders = { ...req.headers };
+//     delete filteredHeaders['content-length'];
+//     delete filteredHeaders['transfer-encoding'];
+//     delete filteredHeaders['host']; // Let fetch/target handle the host
+//     fetch(targetURL, {
+//       method: req.method,
+//       headers: {
+//         ...filteredHeaders,
+//         // host: 'api.external-service.com' // Overwriting host is vital
+//       },
+//       body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
+//     })
+//     .then(response => {
+//       res.status(response.status);
+//       // response.headers.forEach((value, key) => res.setHeader(key, value));
+//       response.headers.forEach((value, key) => {
+//         if (key !== 'transfer-encoding' && key !== 'content-encoding' && key !== 'content-length') {
+//           res.setHeader(key, value);
+//         }
+//       });
+//       return response.body.pipeTo(Writable.toWeb(res));
+//       // return response.arrayBuffer();
+//     })
+//     // .then(buffer => {
+//     //   console.log("[DEBUG] ",new TextDecoder().decode(Buffer.from(buffer)))
+//     //   console.log("[DEBUG][HEADERS]",res.getHeaders());
+//     //   // res.send(Buffer.from(buffer));
+//     //   // res.send("ok")
+//     //   res.send(new TextDecoder().decode(Buffer.from(buffer)));
+//     // })
+//     .catch(err => {
+//       console.error('Fetch Error:', err);
+//       if (!res.headersSent) {
+//         res.status(500).send('Proxy Request Failed');
+//       }
+//     });
+//   })
+//   .catch(function (err) {
+//     console.log(err);
+//     res.status(404).send("Not Found");
+//   });
+// })
 // const attachTarget = async (req, res, next) => {
 //   const appCode = req.params.code
-//   const apiPath = req.params[0]
+//   const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
 //   Entry.findOne({ code: appCode })
 //     .then(function (entry) {
 //       req.proxyTarget = entry.url+"/"+apiPath;
@@ -159,14 +159,28 @@ app.use("/api/:code{/*path}", function(req, res){
 //       res.status(404).send("Not Found");
 //     });
 // };
-// app.post("/api/:code/*", attachTarget, (req, res, next) => {createProxyMiddleware({
-//   target: req.proxyTarget,
-//   changeOrigin: true,
-//   onProxyReq: fixRequestBody,
-//   onProxyReq: (proxyReq, req) => {
-//     console.log(`[Proxy] ${req.method} ${req.url} -> ${proxyReq.host}${proxyReq.path}`);
-//   }
-// })})
+// app.use("/api/:code{/*path}", attachTarget, (req, res) => {createProxyMiddleware({
+app.use("/api/:code{/*path}", createProxyMiddleware({
+  // target: req.proxyTarget,
+  target: "http://localhost:8080",
+  changeOrigin: true,
+  onProxyReq: fixRequestBody,
+  router: (req) => {
+    const appCode = req.params.code
+    const apiPath = Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || "";
+    return Entry.findOne({ code: appCode })
+      .then(function (entry) {
+        console.log("PROXY TARGET", entry.url+"/"+apiPath);
+        return entry.url+"/"+apiPath;
+      })
+      // .catch(function (err) {
+      //   console.log(err);
+      //   throw new Error("Not Found")
+      //   // res.status(404).send("Not Found");
+      // });
+  },
+  pathRewrite: (path, req) => {Array.isArray(req.params.path) ? req.params.path.join('/') : req.params.path || req.params[0] || ""}
+}))
 // app.use("/test/:code/*", createProxyMiddleware({
 //   target: "http://webhook.site/1057d5a1-dd2b-4f17-8538-870c268fcab3",
 //   changeOrigin: true,
