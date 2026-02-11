@@ -1,5 +1,5 @@
 //jshint esversion:6
-
+const { Writable } = require('node:stream');
 const express = require("express");
 // const bodyParser = require("body-parser");
 const _ = require("lodash");
@@ -119,15 +119,20 @@ app.use("/api/:code{/*path}", function(req, res){
       res.status(response.status);
       // response.headers.forEach((value, key) => res.setHeader(key, value));
       response.headers.forEach((value, key) => {
-        if (key !== 'transfer-encoding' && key !== 'content-length') {
+        if (key !== 'transfer-encoding' && key !== 'content-encoding' && key !== 'content-length') {
           res.setHeader(key, value);
         }
       });
-      return response.arrayBuffer();
+      return response.body.pipeTo(Writable.toWeb(res));
+      // return response.arrayBuffer();
     })
-    .then(buffer => {
-      res.send(Buffer.from(buffer));
-    })
+    // .then(buffer => {
+    //   console.log("[DEBUG] ",new TextDecoder().decode(Buffer.from(buffer)))
+    //   console.log("[DEBUG][HEADERS]",res.getHeaders());
+    //   // res.send(Buffer.from(buffer));
+    //   // res.send("ok")
+    //   res.send(new TextDecoder().decode(Buffer.from(buffer)));
+    // })
     .catch(err => {
       console.error('Fetch Error:', err);
       if (!res.headersSent) {
