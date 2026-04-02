@@ -4,7 +4,6 @@ const express = require("express");
 // const bodyParser = require("body-parser");
 const _ = require("lodash");
 const mongoose = require("mongoose");
-const { createClient } = require('redis');
 const fs = require('fs').promises;
 const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 
@@ -28,40 +27,13 @@ async function readConfig() {
       return null
     }
 }
-// Connecting to redis
-async function readRedisConfig() {
-    try {
-      const data = await fs.readFile('./SystemConfiguration.json', 'utf8');
-      const jsonData = JSON.parse(data);
-      const cfg = jsonData.filter(data => data.Datasource == "SUPPORTTOOLREDIS")[0]
-      const userpass = cfg.RedisUser && cfg.RedisPass ? `${cfg.RedisUser}:${cfg.RedisPass}@` : ''
-      return `redis://${userpass}${cfg.RedisIP}:${cfg.RedisPort}`
-    } catch (err) {
-      console.log("Error reading SystemConfiguration.json:", err);
-      return null
-    }
-}
-const redisClient = createClient({ 
-  url: process.env.REDIS_URI || (await readRedisConfig()) || 'redis://127.0.0.1:6379'
-});
-// TODO: PENDING
-// const redisPrefix = process.env.REDIS_KEYS || ''
+main().catch(err => console.log("MongoDB connection error:", err));
 async function main() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI || (await readConfig()) || 'mongodb://127.0.0.1:27017/blogDB', {
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true
-    });
-  } catch (err) {
-    console.error("MongoDB connection error:", err);
-  }
-  try {
-    await redisClient.connect();
-  } catch (err) {
-    console.error("Redis connection error:", err);
-  }
+  await mongoose.connect(process.env.MONGO_URI || (await readConfig()) || 'mongodb://127.0.0.1:27017/blogDB', {
+    // useNewUrlParser: true,
+    // useUnifiedTopology: true
+  });
 }
-main().catch(err => console.log("connection error:", err));
 
 const entrySchema = new mongoose.Schema({
   code: String,
